@@ -3,10 +3,6 @@
 
 ## 1. [Auto-MCMCTree.py](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/src/Auto_MCMCTree.py)
 
-![logo](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/images/auto_mcmctree_logo.png)
-
-
-
 **This script was designed for automating the MCMCTree (a software used for divergence time estimation) pipeline.**
 
 ### [Manual MCMCTree steps](https://github.com/sabifo4/Tutorial_MCMCtree/tree/main) vs `Auto-MCMCTree.py`
