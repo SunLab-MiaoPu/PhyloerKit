@@ -1,7 +1,9 @@
 # PhyloerKit
-- [1. Auto-MCMCTree.py]()
+- [Auto-MCMCTree.py](https://github.com/SunLab-MiaoPu/PhyloerKit#auto-mcmctreepy)
 
-## 1. [Auto-MCMCTree.py](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/src/Auto_MCMCTree.py)
+---
+
+## [Auto-MCMCTree.py](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/src/Auto_MCMCTree.py)
 
 ![logo-auto-mcmc](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/images/auto-mcmctree_logo.png)
 **This script was designed for automating the MCMCTree (a software used for divergence time estimation) pipeline.**
