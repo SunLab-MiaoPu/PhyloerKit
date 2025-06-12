@@ -2,9 +2,21 @@
 - [1. Auto-MCMCTree.py]()
 
 ## 1. [Auto-MCMCTree.py](https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/src/Auto_MCMCTree.py)
+<pre style="color: blue; font-family: monospace; background-color: transparent; border: none; white-space: pre-wrap;">
+     █████╗ ██╗   ██╗████████╗ ██████╗       ███╗   ███╗ ██████╗███╗   ███╗ ██████╗████████╗██████╗ ███████╗███████╗
+    ██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗      ████╗ ████║██╔════╝████╗ ████║██╔════╝╚══██╔══╝██╔══██╗██╔════╝██╔════╝
+    ███████║██║   ██║   ██║   ██║   ██║█████╗██╔████╔██║██║     ██╔████╔██║██║        ██║   ██████╔╝█████╗  █████╗  
+    ██╔══██║██║   ██║   ██║   ██║   ██║╚════╝██║╚██╔╝██║██║     ██║╚██╔╝██║██║        ██║   ██╔══██╗██╔══╝  ██╔══╝  
+    ██║  ██║╚██████╔╝   ██║   ╚██████╔╝      ██║ ╚═╝ ██║╚██████╗██║ ╚═╝ ██║ ██████╗   ██║   ██║  ██║███████╗███████╗
+    ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝       ╚═╝     ╚═╝ ╚═════╝╚═╝     ╚═╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝
+</pre>
+
+
+
+
 **This script was designed for automating the MCMCTree (a software used for divergence time estimation) pipeline.**
 
-### 🚀 [Manual MCMCTree steps](https://github.com/sabifo4/Tutorial_MCMCtree/tree/main) vs `Auto-MCMCTree.py`
+### [Manual MCMCTree steps](https://github.com/sabifo4/Tutorial_MCMCtree/tree/main) vs `Auto-MCMCTree.py`
 
 | Manual MCMCTree Steps | This Script |
 |-----------------------|-------------|
@@ -18,7 +30,7 @@
 **Typical manual workflow requires 10+ commands** → **This script reduces to ONE command to execute the full pipeline!!!**
 **Thus, try to use this script to run MCMCTree automatically!!!**
 
-## ⚙️ Requirements
+## Dependencies
 
 - Python 3.6+
 - MCMCTree (PAML package)
@@ -34,11 +46,12 @@ conda create -n auto_mcmctree
 conda activate auto_mcmctree
 pip install biopython pandas matplotlib rpy2 tqdm
 conda install bioconda::paml
+conda install conda-forge::r-base
 R
 install.packages("MCMCtreeR")
 ```
 
-## 🔍 Pipeline overview
+## Pipeline overview
 
 This Python script automates the complete MCMCTree workflow for Bayesian divergence time estimation. It handles:
 
@@ -49,22 +62,31 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
 - Visualization of time-calibrated trees
 
 
-## 📝 Input Files
+## Input Files
 
-> [!TIP] Only three input files are needed for running this script!
+> [!TIP] 
+> Only three input files are needed for running this script!
 
-1. **Input Tree** (`-it`):
-   - Newick format
+1. **Input tree** (`-it`):
+   - Newick format with branch lengths/support values or not
    - Tip names must match FASTA headers and calibration file
 
 2. **Calibration Config** (`-ic`):
+   - The format of the calibration config file is showed as follows:
    ```text
-   mrca = Human Chimpanzee
-   min = 6.5
-   max = 10.0
+   # Calibration point 1
+   mrca = <calibration_name> <species1> <species2>
+   min = <calibration_name> 6.5 # the minmum calibration age
+   max = <calibration_name> 10.0 # the maximum calibration age
+
+   # Calibration point 2
+   mrca = <calibration_name> <species1> <species2>
+   min = <calibration_name> <age> # the minmum calibration age
    
-   mrca = Mammal Bird
-   min = 160.0
+   # Calibration point 3
+   mrca = <calibration_name> <species1> <species2>
+   max = <calibration_name> <age> # the minmum calibration age
+   ...
    ```
 
 3. **FASTA Directory** (`-fd`):
@@ -72,14 +94,14 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
    - All sequences must be aligned
    - Example:
      ```
-     >Human
+     >Eleagnus_mollifolia
      ATGC...
-     >Chimpanzee
+     >Eleagnus_angustata
      ATGC...
      ```
 
 
-## 🏃‍♂️ Basic Usage:
+## Basic Usage:
 ```bash
 python Auto-MCMCTree.py \
     -it input.tre \
@@ -92,7 +114,7 @@ python Auto-MCMCTree.py \
 
 #### Installation (with the directory `example_dataset`)
 ```
-gitclone https://github.com/SunLab-MiaoPu/PhyloerKit
+git clone https://github.com/SunLab-MiaoPu/PhyloerKit
 ```
 
 #### Step1: Change the working directory
@@ -141,6 +163,7 @@ python ./src/Auto_MCMCTree.py \
 
 ## 📊 Output Files
 
+The output files of type1 are showed below:
 ```
 results/
 ├── Elaeagnus_1.phy                    # Merged PHYLIP alignment as input file for running MCMCTree
@@ -149,6 +172,36 @@ results/
 ├── Elaeagnus_1.convergence_analysis.png  # The figure displaying the covergence analysis results
 └── Elaeagnus_1.MCMCTree_dated.pdf     # Time tree visualization
 ```
+
+### `Elaeagnus_1.convergence_analysis.png`
+This figure displays the convergence results:
+<div align="center">
+  <img src="https://github.com/SunLab-MiaoPu/PhyloerKit/raw/main/images/Eleagnus_1.convergence_analysis.png" 
+       alt="Convergence Analysis Plot" 
+       style="width:60%; max-width:800px;">
+</div>
+
+
+### `Elaeagnus_1.MCMCTree_dated.pdf`
+**This pdf file displays the dated tree file:**
+<br>
+
+<div align="center">
+  <img src="https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/images/Eleagnus_1.MCMCTree_dated.png" 
+       alt="Dated tree Plot" 
+       style="width:60%; max-width:800px;">
+</div>
+
+
+> [!TIP]
+> - For precise editing, you may import this file into Adobe Illustrator, adjust the font size or the font type, etc:
+<br>
+
+<div align="center">
+  <img src="https://github.com/SunLab-MiaoPu/PhyloerKit/blob/main/images/Eleagnus_1.MCMCTree_dated_2.png" 
+       alt="Dated tree Plot 2" 
+       style="width:60%; max-width:800px;">
+</div>
 
 ## 💡 Advanced Options
 
@@ -179,7 +232,7 @@ results/
      -bi 500000 -ns 100000
      ```
 
-## 📜 Full pipeline parameters
+## Full pipeline parameters
 
 ```
 options:
@@ -217,7 +270,3 @@ options:
   --plot_tree           Plot the tree (default: False)
   --no_ladderize_tree   Do not ladderize the tree when plotting the MCMCTree timetree (default: False)
 ```
-
-## 📄 License
-
-MIT License - Free for academic and commercial use
