@@ -53,7 +53,7 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
 - Visualization of time-calibrated trees
 
 
-## Input Files
+## Input files
 
 > [!TIP] 
 > Only three input files are needed for running this script!
@@ -62,7 +62,7 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
    - Newick format with branch lengths/support values or not
    - Tip names must match FASTA headers and calibration file
 
-2. **Calibration Config** (`-ic`):
+2. **Calibration config file** (`-ic`):
    - The format of the calibration config file is showed as follows:
    ```text
    # Calibration point 1
@@ -80,7 +80,7 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
    ...
    ```
 
-3. **FASTA Directory** (`-fd`):
+3. **FASTA directory** (`-fd`):
    - Contains one FASTA per locus
    - All sequences must be aligned
    - Example:
@@ -92,7 +92,7 @@ This Python script automates the complete MCMCTree workflow for Bayesian diverge
      ```
 
 
-## Basic Usage:
+## Basic usage:
 ```bash
 python Auto-MCMCTree.py \
     -it input.tre \
@@ -101,7 +101,7 @@ python Auto-MCMCTree.py \
     -o results/
 ```
 
-## Test Run (with the [`example_data`](https://github.com/SunLab-MiaoPu/PhyloerKit/tree/main/example_dataset)):
+## Test run (with the [`example_data`](https://github.com/SunLab-MiaoPu/PhyloerKit/tree/main/example_dataset)):
 
 #### Installation (with the directory `example_dataset`)
 ```
@@ -136,23 +136,23 @@ python ./src/Auto_MCMCTree.py \
 --plot_tree -p Eleagnus_2
 ```
 
-## 🛠️ Core Parameters
+## 🛠️ Core parameters
 
-### Execution Control:
+### Execution control:
 ```bash
 -bi 200000      # Burn-in (default: 200000)
 -sf 10          # Sampling frequency (default: 10)
 -ns 50000       # Number of samples (default: 50000)
 ```
 
-### Model Settings:
+### Model settings:
 ```bash
 -model 4        # Substitution model (0-4, default: 4=HKY85)
 -clock 2        # Clock model (1-3, default: 2=independent rates)
 -seqtype 0      # 0=nucleotides, 1=codons, 2=AAs
 ```
 
-## 📊 Output Files
+## 📊 Output files
 
 The output files of type1 are showed below:
 ```
@@ -194,16 +194,16 @@ This figure displays the convergence results:
        style="width:60%; max-width:800px;">
 </div>
 
-## 💡 Advanced Options
+## 💡 Advanced options
 
-### Recommended Sampling Schemes:
+### Recommended sampling Schemes:
 ```bash
 -rs small    # Quick test (bi=10000, ns=10000)
 -rs medium   # Medium (bi=100000, ns=20000)
 -rs high     # Production (bi=200000, ns=50000)
 ```
 
-### Visualization Control:
+### Visualization control:
 ```bash
 --plot_tree          # Generate PDF tree visualization
 --no_ladderize_tree  # Disable automatic ladderizing
