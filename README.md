@@ -33,13 +33,22 @@
 
 Install dependencies:
 ```bash
-conda create -n auto_mcmctree
-conda activate auto_mcmctree
-pip install biopython pandas matplotlib rpy2 tqdm
+conda create -n mcmctree python=3.10
+conda activate mcmctree
+conda install -c conda-forge numpy=1.24.3 -y
+conda install -c conda-forge scipy=1.10.1 -y
+conda install -c conda-forge pandas=2.0.3 -y
+conda install -c conda-forge biopython=1.81 -y
+conda install -c conda-forge matplotlib=3.7.1 -y
+conda install -c conda-forge tqdm=4.65.0 -y
+conda install -c conda-forge scikit-learn=1.3.0 -y
 conda install bioconda::paml
+pip install rpy2
 conda install conda-forge::r-base
 R
-install.packages("MCMCtreeR")
+> install.packages("MCMCtreeR")
+> install.packages("ape")
+> quit()
 ```
 
 ## Pipeline overview
