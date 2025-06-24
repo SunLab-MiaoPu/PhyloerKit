@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 import argparse
 import subprocess
 import re
@@ -655,8 +657,8 @@ def main():
     Description: This script is used to run MCMCTree automatically.
     """
     print()
-    print_with_timestamp("\033[38;5;39m" + logo + "\033[0m")
-
+    print("\033[38;5;39m" + logo + "\033[0m")
+    
     parser = argparse.ArgumentParser(description=f"Automated MCMCTree workflow: Takes a phylogenetic tree (Newick format), calibration config file, and a directory of sequence alignments (FASTA format) as input.\n Automatically runs MCMCTree to perform divergence time estimation, generates a time-calibrated tree, and produces a convergence analysis plot to assess MCMC chain reliability.")
     parser.add_argument("-it", "--input_tree", required=True, type=str, help="Input tree file (only Newick format)")
     parser.add_argument("-ic", "--input_config", required=True, type=str, help="Calibration points config file (.config format)")
