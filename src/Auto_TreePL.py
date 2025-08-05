@@ -39,6 +39,8 @@ def config_cv(config_file, cv_file, tree_file, num_sites, nthreads):
         dst.write(f"\n")
         dst.write(f"# do cross validation\n")
         dst.write(f"cv\n")
+        dst.write(f"# check the calibration\n")
+        dst.write(f"checkconstraints\n")
 
 def find_min_chisq_smooth(cv_file):
     """
@@ -96,7 +98,7 @@ def config_prime(config_file, prime_file, tree_file, num_sites, nthreads, smooth
         dst.write(f"# thorough optimization\n")
         dst.write(f"thorough\n")
         dst.write(f"\n")
-        dst.write(f"# do cross validation\n")
+        dst.write(f"# prime mode\n")
         dst.write(f"prime\n")
 
 def run_treepl(config_file):
