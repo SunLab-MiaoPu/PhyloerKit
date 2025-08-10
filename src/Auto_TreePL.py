@@ -180,11 +180,11 @@ def main():
     # Define required command line arguments:
     # -it/--input_treefile: Input tree file in Newick/NEXUS format (required)
     # -ci/--calibration_info: Configuration file with calibration points (required)
-    # -o/--output_tree: Output file name for dated tree (default: "output_dated.tre")
+    # -ot/--output_tree: Output file name for dated tree (default: "output_dated.tre")
     parser.add_argument("-it", "--input_tree", required=True, help="Input tree file (Newick/NEXUS format)")
     parser.add_argument("-ci", "--calibration_info", required=True, help="Calibration points config file (.config format)")
     parser.add_argument("-ns", "--num_sites", required=True, type=int, help="the number sites from your supermatrix, which is used to estimated the tree above")
-    parser.add_argument("-o", "--output_tree", default="output_dated.tre", help="Path to the output time-tree file (default: output_dated.tre)")
+    parser.add_argument("-ot", "--output_tree", default="output_dated.tre", help="Path to the output time-tree file (default: output_dated.tre)")
     parser.add_argument("-nt", "--nthreads", default=1, type=int, help="Number of threads for running TreePL (default: 1)")
 
     # Parse command line arguments
