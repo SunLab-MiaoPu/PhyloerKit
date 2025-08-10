@@ -180,11 +180,11 @@ def main():
     # Define required command line arguments:
     # -it/--input_treefile: Input tree file in Newick/NEXUS format (required)
     # -ci/--calibration_info: Configuration file with calibration points (required)
-    # -o/--output: Output file name for dated tree (default: "output_dated.tre")
+    # -o/--output_tree: Output file name for dated tree (default: "output_dated.tre")
     parser.add_argument("-it", "--input_tree", required=True, help="Input tree file (Newick/NEXUS format)")
     parser.add_argument("-ci", "--calibration_info", required=True, help="Calibration points config file (.config format)")
     parser.add_argument("-ns", "--num_sites", required=True, type=int, help="the number sites from your supermatrix, which is used to estimated the tree above")
-    parser.add_argument("-o", "--output", default="output_dated.tre", help="Path to the output time-tree file (default: output_dated.tre)")
+    parser.add_argument("-o", "--output_tree", default="output_dated.tre", help="Path to the output time-tree file (default: output_dated.tre)")
     parser.add_argument("-nt", "--nthreads", default=1, type=int, help="Number of threads for running TreePL (default: 1)")
 
     # Parse command line arguments
@@ -250,13 +250,13 @@ def main():
     # Step 7: Generating temporary date config file
     print(f"\n[STEP 6/7] Generating temporary date config file...")
     temp_dated_config = f"treepl_dated_{timeline}.config"
-    config_dated(args.calibration_info, temp_dated_config, args.input_tree, args.num_sites, args.nthreads, smooth, args.output, last_five_lines)
+    config_dated(args.calibration_info, temp_dated_config, args.input_tree, args.num_sites, args.nthreads, smooth, args.output_tree, last_five_lines)
     print(f"✓ Dating config file saved to {temp_dated_config}")
 
     # Step 8: run dating
     print(f"\n[STEP 7/7] Generating the final time tree...")
     run_treepl(temp_dated_config, "dating")
-    print(f"✓ Time tree has been saved in {args.output}")
+    print(f"✓ Time tree has been saved in {args.output_tree}")
 
 if __name__ == "__main__":
     main()
