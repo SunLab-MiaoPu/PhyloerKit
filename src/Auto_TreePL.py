@@ -3,9 +3,10 @@ import argparse
 import subprocess
 import re
 import os
+import sys
 import time
 
-def config_cv(config_file, cv_file, tree_file, num_sites, nthreads):
+def config_cv(config_file, cv_file, tree_file, num_sites, nthreads, timeline):
     """
     Load the input config file, and generate a config file for cross-validation.
     """
@@ -30,7 +31,7 @@ def config_cv(config_file, cv_file, tree_file, num_sites, nthreads):
         dst.write(content)
         dst.write(f"\n")
         dst.write(f"# output file name\n")
-        dst.write(f"cvoutfile = treepl_cv_results.txt\n")
+        dst.write(f"cvoutfile = treepl_cv_results_{timeline}.txt\n")
         dst.write(f"\n")
         dst.write(f"# the number of threads\n")
         dst.write(f"nthreads = {nthreads}\n")
@@ -216,7 +217,7 @@ def main():
     # Step 2: Generate temporary cv config file for TreePL
     print("[STEP 1/7] Generating cross-validation config...")
     temp_cv_config = f"treepl_cv_{timeline}.config"
-    config_cv(args.calibration_info, temp_cv_config, args.input_tree, args.num_sites, args.nthreads)
+    config_cv(args.calibration_info, temp_cv_config, args.input_tree, args.num_sites, args.nthreads, timeline)
     print(f"✓ Cross-validation config file saved to {temp_cv_config}")
 
     # Step 3: Run TreePL cross-validation
@@ -241,7 +242,7 @@ def main():
 
     # Step 6: Run TreePL prime
     print(f"\n[STEP 5/7] Running TreePL prime... (it may cost some time, using {args.nthreads} threads)")
-    run_treepl(temp_prime_config, "prime")
+    result = run_treepl(temp_prime_config, "prime")
     print("✓ TreePL prime completed successfully")
     output_lines = result.stdout.splitlines()
     last_five_lines = output_lines[-6:] if len(output_lines) >= 6 else output_lines
