@@ -3,6 +3,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 import argparse
 import subprocess
+from pathlib import Path
 import re
 import os
 from Bio import Phylo
@@ -22,6 +23,28 @@ import rpy2.robjects as ro
 from rpy2.robjects.packages import importr, isinstalled
 from rpy2.robjects import pandas2ri, numpy2ri
 from rpy2.robjects.conversion import localconverter
+
+def ensure_absolute_path(path):
+    """
+    If the input path is relative, convert it to an absolute path.
+    If it is already absolute, return it unchanged.
+
+    Parameters
+    ----------
+    path : str or Path
+        Input file or directory path.
+
+    Returns
+    -------
+    Path
+        Absolute path.
+    """
+    p = Path(path)
+
+    if not p.is_absolute():
+        p = p.resolve()
+
+    return p
 
 def print_with_timestamp(message):
     """Print message with timestamp"""
@@ -136,7 +159,7 @@ def write_ctl_file(prefix, ndata, seqtype, clock, RootAge, burn_in, sample_freq,
         ctl_file.write(f"         alpha = 0.5\n")
         ctl_file.write(f"         ncatG = 5\n\n")
         ctl_file.write(f"     cleandata = {cleandata}\n\n")
-        ctl_file.write(f"       BDparas = 1 1 0.1\n")
+        ctl_file.write(f"       BDparas = C 1 1 0.1\n")
         ctl_file.write(f"   kappa_gamma = 6 2\n")
         ctl_file.write(f"   alpha_gamma = 1 1\n\n")
         ctl_file.write(f"   rgene_gamma = 2 20 1\n")
@@ -337,7 +360,7 @@ def apply_calibrations_to_tree(config_file, tree_file, output_tree, precision, t
         for name in [calibration['species1'], calibration['species2']]:
             found = list(tree.find_elements(name=name))
             if not found:
-                raise ValueError(f"Failed to find the species '{name}' in the tree file: {tree_file}")
+                raise ValueError(f"The species '{name}' in the calibration scheme file cannot be found in your input tree file.")
             terminals.extend(found)
         
         if len(terminals) != 2:
@@ -623,15 +646,21 @@ def plot_mcmctree(tree_path, output_prefix="mcmctree_plot",
             print_with_timestamp(f"Error occurred while executing R code: {str(e)}")
             return None
 
-def clean_directory(directory):
+def clean_directory(directory, preserve_file=None):
     """
-    Clean all files in the specified directory
+    Clean all files in the specified directory, optionally preserving a specific file
     
     Parameters:
         directory: Path to the directory to be cleaned
+        preserve_file: Path to file that should not be deleted (optional)
     """
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
+        
+        # Skip the preserve file if specified
+        if preserve_file and os.path.abspath(file_path) == os.path.abspath(preserve_file):
+            continue
+            
         try:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
@@ -639,6 +668,99 @@ def clean_directory(directory):
                 shutil.rmtree(file_path)
         except Exception as e:
             print_with_timestamp(f"Error: Failed to delete {file_path}. Reason: {e}")
+
+def nexus_to_newick_rescale(
+    nexus_file,
+    out_newick_file,
+    scale=100.0
+):
+    """
+    1. Extract Newick tree from NEXUS file
+    2. Multiply all branch lengths by scale factor
+    3. Remove all [] and their contents (e.g., 95% HPD)
+
+    Parameters
+    ----------
+    nexus_file : str
+        Input NEXUS file path
+    out_newick_file : str
+        Output Newick file path
+    scale : float
+        Branch length scaling factor (default 100)
+    """
+
+    # ---------- 1. Read file ----------
+    with open(nexus_file, "r") as f:
+        text = f.read()
+
+    # ---------- 2. Extract Newick after UTREE / TREE ----------
+    # Use more direct method: based on your NEXUS format, tree is on one line
+    newick = None
+    
+    # Method 1: Direct search for UTREE line and manual parsing
+    for line in text.split('\n'):
+        if 'UTREE' in line and '=' in line:
+            # Find UTREE line
+            parts = line.split('=', 1)
+            if len(parts) == 2:
+                tree_part = parts[1].strip()
+                # Remove trailing semicolon
+                if tree_part.endswith(';'):
+                    tree_part = tree_part[:-1].strip()
+                # Ensure starts with bracket and ends with bracket
+                if tree_part.startswith('('):
+                    # Manually find matching closing bracket
+                    bracket_count = 0
+                    for i, char in enumerate(tree_part):
+                        if char == '(':
+                            bracket_count += 1
+                        elif char == ')':
+                            bracket_count -= 1
+                            if bracket_count == 0:
+                                # Found matching closing bracket
+                                newick = tree_part[:i+1]
+                                break
+                    
+                    # If no balanced brackets found, use entire string
+                    if not newick:
+                        newick = tree_part
+                    break
+    
+    if not newick:
+        # Method 2: Use regex, but more permissive pattern
+        m = re.search(r'UTREE\s+\d+\s*=\s*(\([^;]*\))\s*;', text, flags=re.S)
+        if m:
+            newick = m.group(1).strip()
+    
+    if not newick:
+        # Method 3: Most permissive regex
+        m = re.search(r'UTREE.*?=\s*(\(.*?\))\s*;', text, flags=re.S)
+        if m:
+            newick = m.group(1).strip()
+    
+    if not newick:
+        raise ValueError("TREE / UTREE not found in NEXUS file")
+
+    # ---------- 3. Remove all [ ... ] annotations ----------
+    newick = re.sub(r'\[.*?\]', '', newick)
+
+    # ---------- 4. Scale branch lengths ----------
+    def scale_branch(match):
+        length = float(match.group(1))
+        return f":{length * scale:.6f}"
+
+    newick = re.sub(
+        r':\s*([0-9.eE+-]+)',
+        scale_branch,
+        newick
+    )
+
+    # ---------- 5. Clean extra whitespace ----------
+    newick = re.sub(r'\s+', '', newick)
+
+    # ---------- 6. Write output ----------
+    with open(out_newick_file, "w") as f:
+        f.write(newick + ";\n")
 
 def main():
     logo = r"""
@@ -660,10 +782,14 @@ def main():
     print("\033[38;5;39m" + logo + "\033[0m")
     
     parser = argparse.ArgumentParser(description=f"Automated MCMCTree workflow: Takes a phylogenetic tree (Newick format), calibration config file, and a directory of sequence alignments (FASTA format) as input.\n Automatically runs MCMCTree to perform divergence time estimation, generates a time-calibrated tree, and produces a convergence analysis plot to assess MCMC chain reliability.")
-    parser.add_argument("-it", "--input_tree", required=True, type=str, help="Input tree file (only Newick format)")
-    parser.add_argument("-ic", "--input_config", required=True, type=str, help="Calibration points config file (.config format)")
-    parser.add_argument("-o", "--output_dir", default=".", type=str, help="Output directory (default: .)")
-    parser.add_argument("-fd", "--fasta_dir", required=True, type=str, help="The directory containing all alignments files (fasta format)")
+    parser.add_argument("-it", "--input_tree", required=True, type=lambda x: ensure_absolute_path(x), help="Input tree file (only Newick format)")
+    parser.add_argument("-ic", "--input_config", required=True, type=lambda x: ensure_absolute_path(x), help="Calibration points config file (.config format)")
+    parser.add_argument("-o", "--output_dir", default=".", type=lambda x: ensure_absolute_path(x), help="Output directory (default: .)")
+    
+    # Create mutually exclusive group for input format
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument("-fd", "--fasta_dir", type=lambda x: ensure_absolute_path(x), help="The directory containing all alignments files (fasta format)")
+    input_group.add_argument("-phy", "--phylip", type=lambda x: ensure_absolute_path(x), help="The input file with phylip format")
     parser.add_argument("-p", "--prefix", default="mcmctree", type=str, help="Prefix for the output file (default: mcmctree)")
     parser.add_argument("-bi", "--burn_in", default=200000, type=int, help="Number of burnin for running MCMCTree (default: 200000)")
     parser.add_argument("-sf", "--sample_freq", default=10, type=int, help="Number of sample frequency for running MCMCTree (default: 10)")
@@ -692,33 +818,73 @@ def main():
     args = parser.parse_args()
 
     try:
+        print("Input tree: ", args.input_tree)
+        print("Input config: ", args.input_config)
+        print("Input alignments (FASTA format) directory: ", args.fasta_dir)
+        print("Output directory: ", args.output_dir)
+        
         # Step 0: change the working directory to the output directory
         print()
         print_with_timestamp("Step 0: Preparing output directory...")
-        
-        # Create output directory if it doesn't exist
         if not os.path.exists(args.output_dir):
             os.makedirs(args.output_dir)
-            print_with_timestamp("Created output directory")
-        else:
-            # Clean directory if it exists and is not empty
-            if os.listdir(args.output_dir):
-                print_with_timestamp("Cleaning output directory...")
-                clean_directory(args.output_dir)
-                print_with_timestamp("Output directory cleaned")
-        
-        # Change to output directory
         os.chdir(args.output_dir)
-        print_with_timestamp("✓ Working directory prepared successfully")
-
+        
         # Step 1: Convert the fasta files to the merged phylip file
         print()
         print_with_timestamp("Step 1: Converting FASTA files to PHYLIP format...")
-        process_and_merge_fastas(args.fasta_dir, args.prefix + ".phy")
-        if not os.path.exists(args.prefix + ".phy"):
-            raise RuntimeError("PHYLIP file generation failed")
-        print_with_timestamp("✓ FASTA to PHYLIP conversion completed")
-
+        if args.phylip:
+            print_with_timestamp("Using provided PHYLIP file: " + str(args.phylip))
+            
+            # Check if phylip file exists
+            if not os.path.exists(args.phylip):
+                raise FileNotFoundError(f"PHYLIP file not found: {args.phylip}")
+            
+            # Create output directory if it doesn't exist
+            if not os.path.exists(args.output_dir):
+                os.makedirs(args.output_dir)
+                print_with_timestamp("Created output directory")
+            else:
+                # Clean directory if it exists and is not empty, preserving the phylip file
+                if os.listdir(args.output_dir):
+                    print_with_timestamp("Cleaning output directory...")
+                    clean_directory(args.output_dir, preserve_file=args.phylip)
+                    print_with_timestamp("Output directory cleaned")
+            
+            # Change to output directory
+            os.chdir(args.output_dir)
+            print_with_timestamp("✓ Working directory prepared successfully")
+            
+            # Copy the phylip file to new name (skip if same file)
+            input_phylip_path = Path(str(args.phylip))
+            output_phylip_path = Path(str(args.prefix) + ".phy")
+            
+            if input_phylip_path.name != output_phylip_path.name:
+                shutil.copy(str(args.phylip), str(args.prefix) + ".phy")
+                print_with_timestamp(f"Copied {input_phylip_path.name} to {output_phylip_path.name}")
+            else:
+                print_with_timestamp(f"Using existing file {output_phylip_path.name} in the output directory.")
+        else:
+            # Create output directory if it doesn't exist
+            if not os.path.exists(args.output_dir):
+                os.makedirs(args.output_dir)
+                print_with_timestamp("Created output directory")
+            else:
+                # Clean directory if it exists and is not empty
+                if os.listdir(args.output_dir):
+                    print_with_timestamp("Cleaning output directory...")
+                    clean_directory(args.output_dir)
+                    print_with_timestamp("Output directory cleaned")
+            
+            # Change to output directory
+            os.chdir(args.output_dir)
+            print_with_timestamp("✓ Working directory prepared successfully")
+            
+            process_and_merge_fastas(args.fasta_dir, args.prefix + ".phy")
+            if not os.path.exists(args.prefix + ".phy"):
+                raise RuntimeError("PHYLIP file generation failed")
+            print_with_timestamp("✓ FASTA to PHYLIP conversion completed")
+        
         # Step 2: remove the branch lengths and support from the tree
         print()
         print_with_timestamp("Step 2: Processing input tree...")
@@ -871,7 +1037,18 @@ def main():
             except Exception as e:
                 raise RuntimeError(f"Tree plotting failed: {str(e)}")
         else:
-            print_with_timestamp(f"The tree is not plotted.\n  Please run the script with the --plot_tree option to plot the tree.")
+            print_with_timestamp(f"The time tree is not plotted.\n  Please run the script with the --plot_tree option to plot the tree.")
+        
+        # Step 11: Convert the MCMCTree output NEXUS file into Newick file, scale the divergence time and remove the 95% HPD
+        print()
+        print_with_timestamp("Step 11: Converting the MCMCTree output NEXUS file into Newick file, scaling the divergence time and removing the 95% HPD...")
+        nexus_to_newick_rescale(args.prefix + ".MCMCTree_dated.tre", args.prefix + ".MCMCTree_withoutHPD_dated.newick.tre", scale=100)
+        if not os.path.exists(args.prefix + ".MCMCTree_withoutHPD_dated.newick.tre"):
+            raise RuntimeError(f"\n❌ Conversion failed")
+            print()
+        else:
+            print_with_timestamp(f"✓ Conversion completed.\n  The time tree without 95% HPD and in newick format is generated in {os.path.join(args.output_dir, f'{args.prefix}.MCMCTree_withoutHPD_dated.newick.tre')}")
+            print()
 
     except Exception as e:
         print()
