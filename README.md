@@ -42,7 +42,7 @@ conda install -c conda-forge biopython=1.81 -y
 conda install -c conda-forge matplotlib=3.7.1 -y
 conda install -c conda-forge tqdm=4.65.0 -y
 conda install -c conda-forge scikit-learn=1.3.0 -y
-conda install bioconda::paml
+conda install bioconda::paml=4.10.7 -y
 pip install rpy2
 conda install conda-forge::r-base
 R
